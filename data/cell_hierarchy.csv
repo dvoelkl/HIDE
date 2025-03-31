@@ -1,0 +1,35 @@
+,number,celltype_major,celltype_minor,celltype_sub,Marker
+11,430,Endothelial cell,Arterial EC,Arterial EC,CXCL12;RBP7
+195,4137,Endothelial cell,Capillary EC,Capillary EC,FN1;PLVAP
+197,141,Endothelial cell,Lymphatic EC,Lymphatic EC,RAMP2;PECAM1;CCL21
+198,796,Endothelial cell,Venous EC,Venous EC,ACKR1
+199,1585,Epithelial cell,Luminal progenitor,Luminal progenitor,TACSTD2;KRT7;KRT8;KRT15;SLPI;PCLAF;SAA2;SCGB3A1;SCGB2A2;SFN;IGLC3;LYZ;IGKC;S100A1;TFF1
+199,1585,Epithelial cell,TGM2 luminal cell,TGM2 luminal cell,
+199,7277,Epithelial cell,Breast cancer specific luminal cell,Breast cancer specific luminal cell,TACSTD2;KRT7;KRT8;AREG;STC2;KRT17;PIP;SCGB2A2;ANKRD30A;MUCL1
+199,7277,Epithelial cell,Breast cancer specific proliferation luminal cell,Breast cancer specific proliferation luminal cell,
+199,7277,Epithelial cell,TNBC-specific epithelial cell,TNBC-specific epithelial cell,
+199,7277,Epithelial cell,Breast basal cell,Breast basal cell,
+206,5311,Fibroblast,other fibroblasts,Fibroblast,DCN;LUM;BNC2;ZFPM2;FN1;ADAM12;CCL19;APOE;CD9;APCDD1;CDH19;LAMA2;COCH;TNN;CXCL14;C7;FGFBP2;OLFML2A;TOP2A;UBE2C;MMP3;PTX3;HIST1H4C;APOD;PTGDS;IL1RL1;ID3;IL11;CXCL5;COL1A1;KCNQ1OT1;MIR503HG;ADAMDEC1;ADAM28;MMP1;SERPINE2;COL3A1;FABP4;LDB2;SELENOP;ACTA2;MYH11
+199,7277,Fibroblast,CFD fibroblast,CFD fibroblast,
+199,7277,Fibroblast,CXCL1/2/3 fibroblast,CXCL1/2/3 fibroblast,
+255,178,B cell,other B cells,B cell,TUBB;UBE2C;IGLL1;VPREB1;CD24;VPREB3;CD83;IGHD;IGHM;TUBA1B;STMN1;HMGB2;HIST1H4C;HIST1H1B;HIST1H1D;MARCKSL1;SERPINA9;CD79B;SUGCT;EZR;TCL1A;CD79A;FCRL4;FCRL5;MTRNR2L1;ISG15;MX1;IFI44L;RGS13;RASSF6
+199,7277,B cell,IgA plasma,IgA plasma,
+199,7277,B cell,IgG plasma cell,IgG plasma cell,
+269,927,NK cell,NK cell,NK cell,FCER1G;FCGR3A;GNLY;ISG15;MX1;IFIT3;CCL3;TYROBP;INS;ITGA1
+199,7277,Proliferation T NK,Proliferation T/NK,Proliferation T/NK,
+199,7277,T cell,CD4 T cell,CD4 T,
+273,3122,T cell,CD4 T cell,Tfh,CD3D;LTB;S100A4;CCR7;CXCL13;RGS1;FOXP3
+199,7277,T cell,CD4 T cell,Treg,
+199,7277,T cell,CD4 T cell,INF responsed T,
+246,35,T cell,CD8 T cell,CXCL13 exhausted CD8 T,CXCL13;CD8A;STMN1;TUBA1B;STMN1
+246,3360,T cell,CD8 T cell,GZMH CD8 T,CD3D;CD8A;CD8B;GZMH;CMC1;IL7R 
+246,1397,T cell,CD8 T cell,GZMK CD8 T,CD3D;CD8A;CD8B;GZMK;CMC1;IL7R
+247,378,Myeloid cell,Dendritic cell,cDC2,HIST1H4C;HLA-DPA1
+311,31,Myeloid cell,Dendritic cell,mregDC,CCR7;LAMP3
+312,24,Myeloid cell,Dendritic cell,pDC,CCDC167;CLEC10A;ANXA1;AXL
+314,13,Myeloid cell,Granulocyte,Mast cell,HPGD;HPGDS;TPSB2
+315,2749,Myeloid cell,Macrophages,Macrophage,HIST1H4C;PLCG2;MMP7;IL1B;MMP1;APOE;C1QA;ISG15;C1QB;C1QC;RNASE1;CCR7;MT1H;MMP19;SPP1;APOC1;SELENOP;F13A1;PLTP;TIMD4;CETP;CD5L;CCL3;CD74
+199,7277,Myeloid cell,Macrophages,Proliferation macrophage,
+152,324,Myeloid cell,Monocyte,Monocyte,S100A8;S100A9;HLA-DQA1;CD14;LYZ;FCGR3A;HMGN1;CAMP;LTF;LCN2;DEFA3;DEFA4;MPO
+159,144,Perivascular cell,Pericyte,Pericyte,ACTA2;RGS5;ACTG2;PCLAF;TNC;CCL19;CCL21;C11orf96;CXCL3;CXCL2;CYGB;NDUFA4L2
+220,1086,Perivascular cell,Smooth muscle cell,Smooth muscle cell,ACTA2;PLN;ACTG2;C11orf96;CREB;MT1A;PCP4
