@@ -2,6 +2,7 @@
  
 Implementation of HIDE as proposed in Völkl et al (2025), HIDE: Hierarchical cell-type Deconvolution, https://doi.org/10.1093/bioinformatics/btaf179
 <br>
+<br>
 HIDE (Hierarchical cell-type Deconvolution) is a computational approach on infering cellular distribution from bulk transcriptomic data. In comparison to other algorithms HIDE incorporates a hierarchical cell-type structure. For a detailed description of its advantages, we refer to our paper (Preprint: https://www.biorxiv.org/content/10.1101/2025.01.31.634483v1)
 
 ## Tutorial
