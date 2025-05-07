@@ -127,62 +127,66 @@ def HIDE(C_train_all, C_val_all,
     results_subsettype = {}
 
     for i, celltype in enumerate(subtypes_only_dict.keys()):
-      
-        result_sub= subtypes_pipeline_sub(C_train_subtypes, 
-                                        C_val_subtypes, 
-                                        results_maintype['Y_train_main'], 
-                                        results_maintype['Y_val_main'], 
-                                        X_ref_subtypes, 
-                                        X_main,
-                                        subtypes_only_dict, 
-                                        celltype, 
-                                        results_maintype['C_main_train_est'],
-                                        results_maintype['C_main_val_est'],
-                                        results_maintype['C_main_train'],
-                                        results_maintype['model_main'],
-                                        iterations_dtd, savePath, saveGammaAndX=saveGammaAndX)
-        results_subtypes.update({celltype:result_sub})
-        print("") # Just for readabilty
+        
+        if len(subtypes_only_dict[celltype]) > 1:
+            result_sub= subtypes_pipeline_sub(C_train_subtypes, 
+                                            C_val_subtypes, 
+                                            results_maintype['Y_train_main'], 
+                                            results_maintype['Y_val_main'], 
+                                            X_ref_subtypes, 
+                                            X_main,
+                                            subtypes_only_dict, 
+                                            celltype, 
+                                            results_maintype['C_main_train_est'],
+                                            results_maintype['C_main_val_est'],
+                                            results_maintype['C_main_train'],
+                                            results_maintype['model_main'],
+                                            iterations_dtd, savePath, saveGammaAndX=saveGammaAndX)
+            results_subtypes.update({celltype:result_sub})
+            print("") # Just for readabilty
 
-        # Add results to corr variables
-        corr_val_dtd_sub.extend(result_sub['val_corr']) #[].mean()
-        corr_train_dtd_sub.extend(result_sub['train_corr']) #[].mean()
+            # Add results to corr variables
+            corr_val_dtd_sub.extend(result_sub['val_corr']) #[].mean()
+            corr_train_dtd_sub.extend(result_sub['train_corr']) #[].mean()
 
-        if saveC:
-            result_sub['C_val_est'].to_csv(savePath+f'_C_{celltype}_' + saveC_prefix + f'.csv')
+            if saveC:
+                result_sub['C_val_est'].to_csv(savePath+f'_C_{celltype}_' + saveC_prefix + f'.csv')
 
-        # Now loop through the subset types
-        for j, subtype in enumerate(subtypes_dict[celltype].keys()):
-            
-            if len(subtypes_dict[celltype][subtype]) > 1:
+            # Now loop through the subset types
+            for j, subtype in enumerate(subtypes_dict[celltype].keys()):
+                
+                if len(subtypes_dict[celltype][subtype]) > 1:
 
-                result_subset = subtypes_pipeline_sub(C_train_all, 
-                                            C_val_all, 
-                                            result_sub['Y_train'], 
-                                            result_sub['Y_val'], 
-                                            X_ref_all,
-                                            result_sub['X_sub'],
-                                            subtypes_dict[celltype], 
-                                            subtype, 
-                                            result_sub['C_train_est'],
-                                            result_sub['C_val_est'],
-                                            result_sub['C_train'],
-                                            result_sub['model'],
-                                            iterations_dtd, savePath,
-                                            saveGammaAndX=saveGammaAndX)
-                results_subsettype.update({subtype:result_subset})
-                print("") # Just for readabilty
+                    result_subset = subtypes_pipeline_sub(C_train_all, 
+                                                C_val_all, 
+                                                result_sub['Y_train'], 
+                                                result_sub['Y_val'], 
+                                                X_ref_all,
+                                                result_sub['X_sub'],
+                                                subtypes_dict[celltype], 
+                                                subtype, 
+                                                result_sub['C_train_est'],
+                                                result_sub['C_val_est'],
+                                                result_sub['C_train'],
+                                                result_sub['model'],
+                                                iterations_dtd, savePath,
+                                                saveGammaAndX=saveGammaAndX)
+                    results_subsettype.update({subtype:result_subset})
+                    print("") # Just for readabilty
 
-                # Add results to corr variables
-                corr_val_dtd_subset.extend(result_subset['val_corr'])
-                corr_train_dtd_subset.extend(result_subset['train_corr'])
+                    # Add results to corr variables
+                    corr_val_dtd_subset.extend(result_subset['val_corr'])
+                    corr_train_dtd_subset.extend(result_subset['train_corr'])
 
-                if saveC:
-                    result_subset['C_val_est'].to_csv(savePath+f'_C_{subtype}_' + saveC_prefix + f'.csv')
+                    if saveC:
+                        result_subset['C_val_est'].to_csv(savePath+f'_C_{subtype}_' + saveC_prefix + f'.csv')
 
-                used_subsettypes.extend(subtypes_dict[celltype][subtype])
-            else:
-                print(f"-> No subset types of {subtype}\n")
+                    used_subsettypes.extend(subtypes_dict[celltype][subtype])
+                else:
+                    print(f"-> No subset types of {subtype}\n")
+        else:
+            print(f"-> No minor types of {celltype}\n")
+
             
           
     end_time = datetime.datetime.now()
