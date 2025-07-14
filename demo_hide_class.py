@@ -6,7 +6,7 @@ Zeigt die vereinfachte Anwendung mit train() und predict() Methoden
 
 import pandas as pd
 import numpy as np
-from HIDE_class import HIDEModel
+from HIDE_class import HIDEModel, HIDE
 from pipelines_dataloader import disco_read_metadata
 from pipelines_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
 
@@ -134,7 +134,6 @@ def compare_with_original():
     
     # Test mit Original HIDE
     print("\n-> Teste Original HIDE...")
-    from hDTD import HIDE
     
     results_original = HIDE(
         C_train_all=data['C_train'],
