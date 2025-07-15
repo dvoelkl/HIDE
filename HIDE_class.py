@@ -13,7 +13,6 @@ from methods import ADTD, DTD
 from pipelines_utils import flatten_nested_dict, process_composition, estimate_corr, linReg, adjustToLinReg 
 from utils import calculate_estimated_composition
 import datetime
-#from hDTD import HIDE, subtypes_estimate_composition
 
 class HIDEModel:
     """
