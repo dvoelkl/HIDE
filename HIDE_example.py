@@ -8,7 +8,7 @@
 ### Imports
 import pandas as pd
 import numpy as np
-from hDTD import HIDE
+from HIDE_class import HIDEModel
 from pipelines_dataloader import disco_read_metadata
 from pipelines_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
 
@@ -51,20 +51,45 @@ def run(path_to_data_folder, iterations_HIDE, savePathCorrelation):
     for type in main_celltypes:
         sub_celltypes[type] |= filter_subtypes_by_dataframe_columns(sub_celltypes[type], X_train)
 
-    # Run HIDE
-    res_hide = HIDE(C_train, 
-                        C_val, 
-                        Y_train, 
-                        Y_val, 
-                        X_train, 
-                        sub_celltypes, 
-                        celltype_counts_train, 
-                        iterations_dtd=iterations_HIDE,
-                        savePath=savePathCorrelation, 
-                        saveC=True)
+    # Create and train HIDE model
+    hide_model = HIDEModel(
+        subtypes_dict=sub_celltypes,
+        count_celltypes=celltype_counts_train,
+        iterations_dtd=iterations_HIDE,
+        save_path=savePathCorrelation,
+        save_compositions=True,
+        verbose=True
+    )
+    
+    # Train the model
+    hide_model.train(C_train, C_val, Y_train, Y_val, X_train)
+    
+    # Get training summary
+    training_summary = hide_model.get_training_summary()
+    print(f"Training completed with correlation: {training_summary['training_correlation']:.4f}")
+    print(f"Validation correlation: {training_summary['validation_correlation']:.4f}")
+    
+    return hide_model
 
 
 if __name__ == '__main__':
-
-    run(path_to_data_folder, iterations_HIDE, savePathCorrelation='./results/')
+    # Train the model
+    trained_model = run(path_to_data_folder, iterations_HIDE, savePathCorrelation='./results/')
+    
+    # Optional: Example of making predictions on new data
+    # In this case, we'll predict on the validation set as an example
+    print("\n########## Making Predictions ##########")
+    Y_val = pd.read_csv(path_to_data_folder + "/test_data.csv", index_col=0)
+    
+    # Make predictions
+    predictions = trained_model.predict(Y_val)
+    
+    print(f"Predictions completed:")
+    print(f"  - Major cell types: {list(predictions['major'].index)}")
+    print(f"  - Minor cell types: {list(predictions['minor'].keys())}")
+    print(f"  - Sub cell types: {list(predictions['sub'].keys())}")
+    
+    # Save the trained model for later use
+    trained_model.save_model('./results/trained_hide_model.pkl')
+    print("\nTrained model saved to './results/trained_hide_model.pkl'")
     
