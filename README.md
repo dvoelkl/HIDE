@@ -12,7 +12,9 @@ In Tutorial.ipynb you find a detailed tutorial on how to use HIDE on an example 
 All necessary requirements are frozen in requirements.txt. We recommend python version 3.9.6, as this was the version we used for development.
 
 ## Planned updates
-We plan to expand HIDE in the future to make it more usable to non-expert users. Currently we therefor work on a graphical user interface that will be part of the Deconomix GUI package (see Further algorithms).
+- Make HIDE available to non-coding users by implementing it into our graphical suite of deconvolution tools (Deconomix)
+- Automatic creation of the reference profiles out of single cells
+- Improved usability of the class
 
 ## Further algorithms
 If you are looking for other deconvolution algorithms without the need of a hierarchical cell type structure, we recommend you to explore the Deconomix package (http://deconomix.bioinf.med.uni-goettingen.de)
