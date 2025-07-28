@@ -9,11 +9,11 @@
 import pandas as pd
 import numpy as np
 from HIDE_class import HIDEModel
-from pipelines_dataloader import disco_read_metadata
-from pipelines_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
+from HIDE_dataloader import disco_read_metadata
+from HIDE_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
 
 ### Parameters
-iterations_HIDE = 1000
+iterations_HIDE = 10
 
 path_to_data_folder = f"./data/"
 
