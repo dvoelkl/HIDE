@@ -12,7 +12,10 @@ import pandas as pd
 from deconomix.methods import DTD
 from HIDE_utils import flatten_nested_dict, process_composition, estimate_corr, linReg, adjustToLinReg 
 from deconomix.utils import calculate_estimated_composition
+from HIDE_dataloader import disco_read_metadata
+from HIDE_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
 import datetime
+import pickle
 
 class HIDEModel:
     """
@@ -343,8 +346,6 @@ class HIDEModel:
         if not self.is_trained:
             raise ValueError("Model must be trained before saving.")
         
-        import pickle
-        
         model_data = {
             'subtypes_dict': self.subtypes_dict,
             'count_celltypes': self.count_celltypes,
@@ -359,6 +360,176 @@ class HIDEModel:
         if self.verbose:
             print(f"Model saved to {filepath}")
     
+    @classmethod
+    def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, 
+                           save_path=None, save_models=False, save_compositions=False, verbose=True):
+        """
+        Create a HIDEModel from a cell hierarchy CSV file.
+        
+        This method simplifies the model creation by automatically parsing the hierarchy file
+        and calculating cell type counts from the reference matrix.
+        
+        Parameters
+        ----------
+        hierarchy_file_path : str
+            Path to the CSV file containing cell hierarchy with columns:
+            'celltype_major', 'celltype_minor', 'celltype_sub'
+        X_ref : pd.DataFrame
+            Reference expression matrix (genes x cell types)
+        iterations_dtd : int, default=500
+            Number of iterations for DTD training
+        save_path : str, optional
+            Path to save intermediate results and plots
+        save_models : bool, default=False
+            Whether to save model parameters (gamma, X, LinReg)
+        save_compositions : bool, default=False
+            Whether to save estimated compositions
+        verbose : bool, default=True
+            Whether to print progress information
+            
+        Returns
+        -------
+        model : HIDEModel
+            Configured HIDE model ready for training
+            
+        Examples
+        --------
+        >>> # Simple usage
+        >>> model = HIDEModel.from_hierarchy_file('cell_hierarchy.csv', X_ref)
+        >>> model.train(C_train, C_val, Y_train, Y_val, X_ref)
+        
+        >>> # With custom parameters
+        >>> model = HIDEModel.from_hierarchy_file(
+        ...     'cell_hierarchy.csv', 
+        ...     X_ref,
+        ...     iterations_dtd=1000,
+        ...     save_path='./results/',
+        ...     verbose=True
+        ... )
+        """
+        
+        if verbose:
+            print(f"-> Loading cell hierarchy from: {hierarchy_file_path}")
+        
+        try:
+            # Load metadata using the existing function
+            meta_major = disco_read_metadata(hierarchy_file_path, "celltype_major", 'celltype_minor')
+            main_celltypes = meta_major['main_celltypes']
+            sub_celltypes = meta_major['sub_celltypes']
+            
+            meta_minor = disco_read_metadata(hierarchy_file_path, "celltype_minor", 'celltype_sub')
+            subset_celltypes = meta_minor['sub_celltypes']
+            
+            # Merge the cell type dictionaries
+            merged_celltypes = merge_celltypes(sub_celltypes, subset_celltypes)
+            
+            if verbose:
+                print(f"-> Found {len(main_celltypes)} major cell types:")
+                for i, celltype in enumerate(main_celltypes):
+                    print(f"   {i+1}. {celltype}")
+            
+        except Exception as e:
+            raise ValueError(f"Failed to load hierarchy file '{hierarchy_file_path}': {str(e)}")
+        
+        # Filter subtypes dictionary to only include cell types present in X_ref
+        if verbose:
+            print(f"-> Filtering cell types based on reference matrix...")
+            
+        original_count = sum(len(list(subtypes.values())[0]) if subtypes and isinstance(list(subtypes.values())[0], list) 
+                           else len(subtypes) for subtypes in merged_celltypes.values())
+        
+        # Filter the hierarchical structure
+        filtered_celltypes = {}
+        for main_celltype in main_celltypes:
+            if main_celltype in merged_celltypes:
+                filtered_celltypes[main_celltype] = {}
+                for subtype, sub_subtypes in merged_celltypes[main_celltype].items():
+                    # Filter sub-subtypes to only include those present in X_ref
+                    valid_sub_subtypes = [sst for sst in sub_subtypes if sst in X_ref.columns]
+                    if valid_sub_subtypes:
+                        filtered_celltypes[main_celltype][subtype] = valid_sub_subtypes
+                
+                # Remove empty main celltypes
+                if not filtered_celltypes[main_celltype]:
+                    del filtered_celltypes[main_celltype]
+        
+        merged_celltypes = filtered_celltypes
+        
+        filtered_count = sum(len(sub_subtypes) for subtypes in merged_celltypes.values() 
+                           for sub_subtypes in subtypes.values())
+        
+        if verbose:
+            print(f"-> Filtered cell types: {original_count} → {filtered_count}")
+            if original_count > filtered_count:
+                print(f"-> {original_count - filtered_count} cell types were not found in reference matrix")
+        
+        # Calculate cell type counts from reference matrix
+        if verbose:
+            print(f"-> Calculating cell type counts from reference matrix...")
+            
+        count_celltypes = {}
+        available_celltypes = set(X_ref.columns)
+        
+        for celltype in X_ref.columns.unique():
+            if celltype in available_celltypes:
+                # Use a default count of 1 for each cell type if no other information is available
+                # This can be overridden later if actual counts are available
+                count_celltypes[celltype] = 1
+        
+        if verbose:
+            print(f"-> Calculated counts for {len(count_celltypes)} cell types")
+            print(f"-> Note: Using uniform counts (1) for all cell types. You can update these later with actual counts.")
+        
+        # Create and return the model
+        model = cls(
+            subtypes_dict=merged_celltypes,
+            count_celltypes=count_celltypes,
+            iterations_dtd=iterations_dtd,
+            save_path=save_path,
+            save_models=save_models,
+            save_compositions=save_compositions,
+            verbose=verbose
+        )
+        
+        if verbose:
+            print(f"HIDEModel created successfully!")
+            print(f"   - Major cell types: {len([ct for ct in merged_celltypes.keys() if merged_celltypes[ct]])}")
+            total_subtypes = sum(len(subtypes) for subtypes in merged_celltypes.values())
+            print(f"   - Total subtypes: {total_subtypes}")
+            print(f"   - Available cell types in reference: {len(count_celltypes)}")
+        
+        return model
+    
+    def update_cell_counts(self, count_celltypes):
+        """
+        Update cell type counts after model creation.
+        
+        This is useful when you create a model using from_hierarchy_file() with default counts
+        and later want to provide actual cell counts from your training data.
+        
+        Parameters
+        ----------
+        count_celltypes : dict
+            Dictionary containing counts of each cell type
+            
+        Examples
+        --------
+        >>> model = HIDEModel.from_hierarchy_file('hierarchy.csv', X_ref)
+        >>> # Calculate actual counts from training data
+        >>> actual_counts = {celltype: C_train.sum(axis=1)[celltype] 
+        ...                  for celltype in X_ref.columns.unique()}
+        >>> model.update_cell_counts(actual_counts)
+        """
+        if self.verbose:
+            print(f"-> Updating cell type counts...")
+            print(f"   - Previous count keys: {len(self.count_celltypes)}")
+            print(f"   - New count keys: {len(count_celltypes)}")
+        
+        self.count_celltypes.update(count_celltypes)
+        
+        if self.verbose:
+            print(f"-> Cell type counts updated successfully!")
+
     @classmethod
     def load_model(cls, filepath, verbose=True):
         """
