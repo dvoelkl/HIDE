@@ -39,7 +39,7 @@ model.save_model('trained_model.pkl')
 In Tutorial.ipynb you find a detailed tutorial on how to use HIDE on an example breast cancer data set downloaded from DISCO (https://www.immunesinglecell.org/cell_type). HIDE_example.py also features the same example as how it could be used to integrate it into your pipeline.
 
 ## Requirements
-All necessary requirements are frozen in requirements.txt. We recommend python version 3.9.6, as this was the version we used for development.
+All necessary requirements are frozen in requirements.txt. We recommend python version 3.13.2, as this was the version we used for freezing the requirements. For other version you must install the requirements on your own.
 
 ## Planned updates
 - Make HIDE available to non-coding users by implementing it into our graphical suite of deconvolution tools (Deconomix)

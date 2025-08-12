@@ -1,17 +1,17 @@
 ##########################################################
 #
-#
-#
+# HIDE Example
 #
 ##########################################################
 
 ### Imports
 import pandas as pd
 import numpy as np
+import os
 from HIDE_class import HIDEModel
 
 ### Parameters
-iterations_HIDE = 1000
+iterations_HIDE = 10
 
 path_to_data_folder = f"./data/"
 
@@ -19,6 +19,11 @@ path_to_data_folder = f"./data/"
 ### MAIN ###
 def run(path_to_data_folder, iterations_HIDE, savePathCorrelation):
     print("########## HIDE ##########")
+    
+    # Check if savePathCorrelation directory exists, create if not
+    if not os.path.exists(savePathCorrelation):
+        os.makedirs(savePathCorrelation)
+        print(f"--> Created directory: {savePathCorrelation}")
 
     # Load data files
     X_train = pd.read_csv(path_to_data_folder + "/X_train.csv", index_col=0)

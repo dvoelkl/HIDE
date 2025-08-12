@@ -1,6 +1,6 @@
 ##########################################################
 #
-# Various utility functions for DTD/ADTD pipelines
+# Various utility functions for HIDE
 #
 ##########################################################
 
@@ -455,30 +455,3 @@ def split_train_test_half_exact_half(sc_data):
         data_val = pd.concat([data_val, add_to_test], axis=1)
 
     return data_train, data_val
-
-# %% ####################################################################################
-def linReg(C_true, C_est):
-    # Get celltypes
-    celltypes = C_true.index.unique()
-
-    linReg_results = pd.DataFrame(index=celltypes, columns=['slope', 'intercept', 'p'])
-
-    for celltype in celltypes:
-        slope, intercept, _, p, _ = linregress(C_est.loc[celltype,:], C_true.loc[celltype,:])
-
-        linReg_results.loc[celltype, 'slope'] = slope
-        linReg_results.loc[celltype, 'intercept'] = intercept
-        linReg_results.loc[celltype, 'p'] = p
-
-    return linReg_results
-
-# %% ####################################################################################
-def adjustToLinReg(C_est, linReg_results):
-    # Get celltypes
-    celltypes = linReg_results.index.unique()
-
-    for celltype in celltypes:
-        # y = mx + t
-        C_est.loc[celltype] = linReg_results.loc[celltype, 'slope'] * C_est.loc[celltype] + linReg_results.loc[celltype, 'intercept']
-
-    return C_est

@@ -5,12 +5,12 @@
 ##########################################################
 
 import matplotlib.pyplot as plt
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, linregress
 from scipy.io import mmread
 import numpy as np
 import pandas as pd
 from deconomix.methods import DTD
-from HIDE_utils import flatten_nested_dict, process_composition, estimate_corr, linReg, adjustToLinReg 
+from HIDE_utils import flatten_nested_dict, process_composition, estimate_corr
 from deconomix.utils import calculate_estimated_composition
 from HIDE_dataloader import disco_read_metadata
 from HIDE_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
@@ -259,7 +259,7 @@ class HIDEModel:
         )
         
         # Apply linear regression adjustment
-        C_est = adjustToLinReg(C_est, params['LinReg'])
+        C_est = HIDEModel.adjustToLinReg(C_est, params['LinReg'])
         
         # Ensure non-negative and normalize
         C_est = C_est.clip(lower=0)
@@ -572,6 +572,33 @@ class HIDEModel:
         return model
     
 
+    @staticmethod
+    def linReg(C_true, C_est):
+        # Get celltypes
+        celltypes = C_true.index.unique()
+
+        linReg_results = pd.DataFrame(index=celltypes, columns=['slope', 'intercept', 'p'])
+
+        for celltype in celltypes:
+            slope, intercept, _, p, _ = linregress(C_est.loc[celltype,:], C_true.loc[celltype,:])
+
+            linReg_results.loc[celltype, 'slope'] = slope
+            linReg_results.loc[celltype, 'intercept'] = intercept
+            linReg_results.loc[celltype, 'p'] = p
+
+        return linReg_results
+
+    @staticmethod
+    def adjustToLinReg(C_est, linReg_results):
+        # Get celltypes
+        celltypes = linReg_results.index.unique()
+
+        for celltype in celltypes:
+            # y = mx + t
+            C_est.loc[celltype] = linReg_results.loc[celltype, 'slope'] * C_est.loc[celltype] + linReg_results.loc[celltype, 'intercept']
+
+        return C_est 
+
     # %% ####################################################################################
 def HIDE(C_train_all, C_val_all, 
                       Y_train_all, Y_val_all, 
@@ -852,12 +879,12 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
     C_val_est = calculate_estimated_composition(X_ref, Y_val_all, model_dtd.gamma)
 
-    linReg_results = linReg(C_train, C_train_est)
+    linReg_results = HIDEModel.linReg(C_train, C_train_est)
     if savePathVal is not None:
         pass
         #linReg_results.to_csv(savePathVal+f'_LinReg_main.csv')
 
-    C_val_est = adjustToLinReg(C_val_est, linReg_results)
+    C_val_est = HIDEModel.adjustToLinReg(C_val_est, linReg_results)
 
     C_val_est = C_val_est / C_val_est.sum(axis=0)
 
@@ -951,7 +978,7 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
                             title=f'HIDE {type_to_extend} Training', 
                             savePath=savePathTrain)
     
-    linReg_results = linReg(C_train, estimation_train['C_est'])
+    linReg_results = HIDEModel.linReg(C_train, estimation_train['C_est'])
     if savePathVal is not None:
         pass
         #linReg_results.to_csv(savePathVal+f'_LinReg_{type_to_extend}.csv')
@@ -1031,7 +1058,7 @@ def subtypes_estimate_composition(X_sub, X_main,
     # Perform linear 
     #
     if linReg is not None:
-        C_est = adjustToLinReg(C_est, linReg)
+        C_est = HIDEModel.adjustToLinReg(C_est, linReg)
         C_est = C_est.clip(lower=0) 
 
     #
