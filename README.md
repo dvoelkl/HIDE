@@ -51,4 +51,4 @@ All necessary requirements are frozen in requirements.txt. We recommend python v
 If you are looking for other deconvolution algorithms without the need of a hierarchical cell type structure, we recommend you to explore the DeconomiX package (http://deconomix.bioinf.med.uni-goettingen.de)
 
 ## Bugs, Issues, Correspondence
-If you find any bug, struggle with loading a specific dataset, have any question or comment, please don't hesitate to contact us either via GitHub or via Email to franziska(dot)gortler(at)uib(dot)no or dennis(dot)voelkl(at)stud(dot)uni-regensburg(dot)de (replace (dot) with . and (at) with @)
+If you find any bug, struggle with loading a specific dataset, have any question or comment, please don't hesitate to contact us either via GitHub or via Email to franziska(dot)gortler(at)uib(dot)no or dennis(dot)k(dot)volkl(at)uib(dot)no (replace (dot) with . and (at) with @)
