@@ -131,6 +131,19 @@ def estimate_corr(C_true, C_est, title="", color="grey", fPlot=False, hidden_ct=
 
     return correlations.fillna(0)
 
+# %% ####################################################################################
+def estimate_nmae(C_true, C_est):
+
+    nmae = pd.Series(index=C_true.index, dtype=float)
+    for celltype in C_true.index:
+        true = C_true.loc[celltype]
+        est = C_est.loc[celltype]
+        est.index = true.index # index might be different, if true data frame has some separate names
+        mae = np.mean(np.abs(true - est))
+        mean_true = np.mean(np.abs(true))
+        nmae[celltype] = mae / mean_true if mean_true != 0 else np.nan
+    return nmae.fillna(0)
+
 
 # %% ####################################################################################
 def tirosh_create_subtype_labelled_set(sc_data, metadata, column_name_main, column_name_sub, types_to_split, verbose=False):
