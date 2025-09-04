@@ -392,11 +392,13 @@ class HIDEModel:
         val_nmae_all = pd.concat([val_major_nmae, val_minor_nmae, val_sub_nmae])
 
         train_metrics = pd.DataFrame({
+            'Idx' : range(len(train_corr_all)),
             'Correlation': train_corr_all,
             'NMAE': train_nmae_all,
             'Type': pd.Series(type_labels)
         })
         val_metrics = pd.DataFrame({
+            'Idx' : range(len(val_corr_all)),
             'Correlation': val_corr_all,
             'NMAE': val_nmae_all,
             'Type': pd.Series(type_labels)
