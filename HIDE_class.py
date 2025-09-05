@@ -347,6 +347,12 @@ class HIDEModel:
         val_major_corr = self.training_results['major']['val_main_corr']
         val_major_nmae = self.training_results['major']['val_main_nmae']
 
+        # Add prefixes to celltype, such that it can't be a duplicate index later on
+        train_major_corr = train_major_corr.add_prefix('major_', axis=0)
+        train_major_nmae = train_major_nmae.add_prefix('major_', axis=0)
+        val_major_corr = val_major_corr.add_prefix('major_', axis=0)
+        val_major_nmae = val_major_nmae.add_prefix('major_', axis=0)
+
         # Minor
         minor_types = []
         train_minor_corr = pd.Series(dtype=float)
@@ -360,6 +366,12 @@ class HIDEModel:
                 train_minor_nmae[subtype] = self.training_results['minor'][celltype]['train_nmae'].get(subtype, float('nan'))
                 val_minor_corr[subtype] = self.training_results['minor'][celltype]['val_corr'].get(subtype, float('nan'))
                 val_minor_nmae[subtype] = self.training_results['minor'][celltype]['val_nmae'].get(subtype, float('nan'))
+
+        # Add prefixes to celltype, such that it can't be a duplicate index later on
+        train_minor_corr = train_minor_corr.add_prefix('minor_', axis=0)
+        train_minor_nmae = train_minor_nmae.add_prefix('minor_', axis=0)
+        val_minor_corr = val_minor_corr.add_prefix('minor_', axis=0)
+        val_minor_nmae = val_minor_nmae.add_prefix('minor_', axis=0)
 
         # Sub
         sub_types = []
@@ -375,33 +387,24 @@ class HIDEModel:
                 val_sub_corr[subsubtype] = self.training_results['sub'][subtype]['val_corr'].get(subsubtype, float('nan'))
                 val_sub_nmae[subsubtype] = self.training_results['sub'][subtype]['val_nmae'].get(subsubtype, float('nan'))
 
-        # Typen zuordnen
-        type_labels = {}
-        for t in major_types:
-            type_labels[t] = "Major"
-        for t in minor_types:
-            type_labels[t] = "Minor"
-        for t in sub_types:
-            type_labels[t] = "Sub"
+        # Add prefixes to celltype, such that it can't be a duplicate index later on
+        train_sub_corr = train_sub_corr.add_prefix('sub_', axis=0)
+        train_sub_nmae = train_sub_nmae.add_prefix('sub_', axis=0)
+        val_sub_corr = val_sub_corr.add_prefix('sub_', axis=0)
+        val_sub_nmae = val_sub_nmae.add_prefix('sub_', axis=0)
 
-        # Kombiniere alle Zelltypen und Metriken
-        all_types = major_types + minor_types + sub_types
         train_corr_all = pd.concat([train_major_corr, train_minor_corr, train_sub_corr])
         train_nmae_all = pd.concat([train_major_nmae, train_minor_nmae, train_sub_nmae])
         val_corr_all = pd.concat([val_major_corr, val_minor_corr, val_sub_corr])
         val_nmae_all = pd.concat([val_major_nmae, val_minor_nmae, val_sub_nmae])
 
         train_metrics = pd.DataFrame({
-            'Idx' : range(len(train_corr_all)),
             'Correlation': train_corr_all,
-            'NMAE': train_nmae_all,
-            'Type': pd.Series(type_labels)
+            'NMAE': train_nmae_all
         })
         val_metrics = pd.DataFrame({
-            'Idx' : range(len(val_corr_all)),
             'Correlation': val_corr_all,
-            'NMAE': val_nmae_all,
-            'Type': pd.Series(type_labels)
+            'NMAE': val_nmae_all
         })
 
         return train_metrics, val_metrics
