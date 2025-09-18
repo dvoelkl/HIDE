@@ -656,7 +656,14 @@ class HIDEModel:
         linReg_results = pd.DataFrame(index=celltypes, columns=['slope', 'intercept', 'p'])
 
         for celltype in celltypes:
-            slope, intercept, _, p, _ = linregress(C_est.loc[celltype,:], C_true.loc[celltype,:])
+            try:
+                slope, intercept, _, p, _ = linregress(C_est.loc[celltype,:], C_true.loc[celltype,:])
+            except:
+                # Catch case where some cell type is constantly zero, then f(x) = id(x)
+                print(f"-> Warning: {celltype} proportions were constant")
+                slope = 1 #
+                intercept = 0
+                p = 0
 
             linReg_results.loc[celltype, 'slope'] = slope
             linReg_results.loc[celltype, 'intercept'] = intercept
