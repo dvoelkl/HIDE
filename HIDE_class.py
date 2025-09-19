@@ -232,7 +232,10 @@ class HIDEModel:
             'minor': {},
             'sub': {}
         }
-        
+
+        # Extract relationship between subtypes to minor cell type for reduced memory consumption of saved model
+        self.subtype_to_parent = {}
+
         # Extract minor celltype parameters
         for celltype, results in self.training_results['minor'].items():
             self.model_parameters['minor'][celltype] = {
@@ -240,7 +243,10 @@ class HIDEModel:
                 'X_ref': results['X_sub'],
                 'LinReg': results['LinReg']
             }
-        
+
+            for subtype in results['C_train'].index:
+                self.subtype_to_parent[subtype] = celltype
+
         # Extract sub-subtype parameters
         for subtype, results in self.training_results['sub'].items():
             self.model_parameters['sub'][subtype] = {
@@ -295,14 +301,8 @@ class HIDEModel:
         return result['C_est']
     
     def _find_parent_celltype(self, subtype):
-        """Find the parent cell type for a given subtype."""
-        
-        # Search in the minor results to find which celltype contains this subtype
-        for celltype, results in self.training_results['minor'].items():
-            if subtype in results['C_train'].index:
-                return celltype
-        
-        return None
+        """Find the parent cell type for a given subtype using the Zuordnung."""
+        return self.subtype_to_parent.get(subtype, None)
     
     def get_training_summary(self):
         """
@@ -427,12 +427,12 @@ class HIDEModel:
             'count_celltypes': self.count_celltypes,
             'iterations_dtd': self.iterations_dtd,
             'model_parameters': self.model_parameters,
-            'training_results': self.training_results
+            'subtype_to_parent': self.subtype_to_parent
         }
-        
+
         with open(filepath, 'wb') as f:
             pickle.dump(model_data, f)
-        
+
         if self.verbose:
             print(f"Model saved to {filepath}")
     
@@ -628,7 +628,7 @@ class HIDEModel:
         
         with open(filepath, 'rb') as f:
             model_data = pickle.load(f)
-        
+
         # Create new instance
         model = cls(
             subtypes_dict=model_data['subtypes_dict'],
@@ -636,15 +636,15 @@ class HIDEModel:
             iterations_dtd=model_data['iterations_dtd'],
             verbose=verbose
         )
-        
+
         # Restore trained state
         model.model_parameters = model_data['model_parameters']
-        model.training_results = model_data['training_results']
         model.is_trained = True
-        
+        model.subtype_to_parent = model_data.get('subtype_to_parent', {})
+
         if verbose:
             print(f"Model loaded from {filepath}")
-        
+
         return model
     
 
