@@ -75,11 +75,11 @@ if __name__ == '__main__':
     
     # Make predictions
     predictions = trained_model.predict(Y_val)
-    
-    print(f"Predictions completed:")
-    print(f"  - Major cell types: {list(predictions['major'].index)}")
-    print(f"  - Minor cell types: {list(predictions['minor'].keys())}")
-    print(f"  - Sub cell types: {list(predictions['sub'].keys())}")
+
+    # Access the prediction
+    C_major = predictions['major']
+    C_minor = predictions['minor']
+    C_est = predictions['sub']
     
     # Save the trained model for later use
     trained_model.save_model('./results/trained_hide_model.pkl')

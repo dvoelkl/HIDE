@@ -55,12 +55,10 @@ class HIDEModel:
         self.save_compositions = save_compositions
         self.verbose = verbose
         
-        # Model parameters (will be set after training)
         self.is_trained = False
         self.training_results = None
         self.model_parameters = None
         
-        # Validate subtypes_dict structure after setting verbose
         self._validate_subtypes_dict(subtypes_dict)
     
     def _validate_subtypes_dict(self, subtypes_dict):
@@ -143,82 +141,95 @@ class HIDEModel:
     
     def predict(self, Y_new):
         """
-        Predict cell type compositions for new bulk data.
+        Predict cell type compositions for bulk data.
         
         Parameters
         ----------
         Y_new : pd.DataFrame
-            New bulk expression data (genes x samples)
+            Bulk expression data (genes x samples)
             
         Returns
         -------
         predictions : dict
-            Dictionary containing predictions for each hierarchical level:
             - 'major': Main cell type predictions
-            - 'minor': Sub-cell type predictions  
-            - 'sub': Sub-sub-cell type predictions
+            - 'minor': Minor cell type predictions  
+            - 'sub': Sub cell type predictions
         """
         
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions. Call train() first.")
         
-        if self.verbose:
-            print("="*50)
-            print("      Making Predictions")
-            print("="*50)
-            print(f"Predicting for {Y_new.shape[1]} samples...")
-        
-        predictions = {}
-        
-        # 1. Predict major cell types
-        if self.verbose:
-            print("-> Predicting major cell types...")
-        
+
         major_predictions = self._predict_major_celltypes(Y_new)
-        predictions['major'] = major_predictions
-        
-        # 2. Predict minor cell types (subtypes)
-        if self.verbose:
-            print("-> Predicting minor cell types...")
-        
+
+
         minor_predictions = {}
         for celltype in self.model_parameters['minor'].keys():
-            if self.verbose:
-                print(f"   -> Predicting {celltype} subtypes...")
-            
+
             minor_pred = self._predict_subtypes(
                 Y_new, celltype, major_predictions, level='minor'
             )
             minor_predictions[celltype] = minor_pred
-        
-        predictions['minor'] = minor_predictions
-        
-        # 3. Predict sub-subtypes if they exist
+
+        sub_predictions = {}
         if self.model_parameters['sub']:
-            if self.verbose:
-                print("-> Predicting sub-subtypes...")
-            
-            sub_predictions = {}
+
             for subtype in self.model_parameters['sub'].keys():
-                if self.verbose:
-                    print(f"   -> Predicting {subtype} sub-subtypes...")
-                
-                # Find parent celltype
+
                 parent_celltype = self._find_parent_celltype(subtype)
-                if parent_celltype:
+                
+                if parent_celltype and parent_celltype in minor_predictions:
                     sub_pred = self._predict_subtypes(
                         Y_new, subtype, minor_predictions[parent_celltype], level='sub'
                     )
                     sub_predictions[subtype] = sub_pred
-            
-            predictions['sub'] = sub_predictions
-        else:
-            predictions['sub'] = {}
-        
-        if self.verbose:
-            print(f"-> Predictions complete for {Y_new.shape[1]} samples")
-        
-        return predictions
+
+        C_major = major_predictions.copy()
+
+        sample_cols = Y_new.columns
+        minor_rows = []
+        major_rows = list(C_major.index)
+        for main_ct in major_rows:
+            if main_ct in minor_predictions:
+                minor_rows.extend(list(minor_predictions[main_ct].index))
+            else:
+                minor_rows.append(main_ct)
+
+        C_minor = pd.DataFrame(0.0, index=minor_rows, columns=sample_cols)
+
+        for main_ct in major_rows:
+            if main_ct in minor_predictions:
+                df = minor_predictions[main_ct]
+
+                for r in df.index:
+                    C_minor.loc[r] = df.loc[r]
+            else:
+                C_minor.loc[main_ct] = C_major.loc[main_ct]
+
+
+        deep_rows = []
+        for minor_name in minor_rows:
+            if minor_name in self.model_parameters['sub']:
+                sub_cols = list(self.model_parameters['sub'][minor_name]['X_ref'].columns)
+                deep_rows.extend(sub_cols)
+            else:
+                deep_rows.append(minor_name)
+
+        C_est = pd.DataFrame(0.0, index=deep_rows, columns=sample_cols)
+
+        for minor_name in minor_rows:
+            if minor_name in sub_predictions:
+                df = sub_predictions[minor_name]
+                for r in df.index:
+                    C_est.loc[r] = df.loc[r]
+            else:
+                C_est.loc[minor_name] = C_minor.loc[minor_name]
+
+        return {
+            'major': C_major,
+            'minor': C_minor,
+            'sub': C_est
+        }
     
     def _extract_model_parameters(self):
         """Extract model parameters needed for prediction."""
@@ -1169,7 +1180,7 @@ def subtypes_estimate_composition(X_sub, X_main,
     xi_val = (C_main.loc[type_to_extend].to_numpy() / C_est.sum(axis=0).to_numpy())
     xi_val = np.nan_to_num(xi_val) # Ensure no nans are in xi
 
-    C_est_xi = pd.DataFrame(xi_val*C_est.to_numpy(), index=C_est.index)
+    C_est_xi = pd.DataFrame(xi_val * C_est.to_numpy(), index=C_est.index, columns=C_est.columns)
 
     return {
         'C_est' : C_est_xi,
