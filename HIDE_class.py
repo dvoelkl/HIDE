@@ -41,14 +41,13 @@ class HIDEModel:
     """
     
     def __init__(self, subtypes_dict, count_celltypes, iterations_dtd=500, 
-                 save_path=None, save_compositions=False, verbose=True):
+                 save_path=None, verbose=True):
         
         # Set attributes first
         self.subtypes_dict = subtypes_dict
         self.count_celltypes = count_celltypes
         self.iterations_dtd = iterations_dtd
         self.save_path = save_path
-        self.save_compositions = save_compositions
         self.verbose = verbose
         
         self.is_trained = False
@@ -116,8 +115,7 @@ class HIDEModel:
             subtypes_dict=self.subtypes_dict,
             count_celltypes=self.count_celltypes,
             iterations_dtd=self.iterations_dtd,
-            savePath=self.save_path,
-            saveC=self.save_compositions
+            savePath=self.save_path
         )
         
         # Extract model parameters for later prediction
@@ -444,7 +442,7 @@ class HIDEModel:
     
     @classmethod
     def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, 
-                           save_path=None, save_compositions=False, verbose=True):
+                           save_path=None, verbose=True):
         """
         Create a HIDEModel from a cell hierarchy CSV file.
         
@@ -566,7 +564,6 @@ class HIDEModel:
             count_celltypes=count_celltypes,
             iterations_dtd=iterations_dtd,
             save_path=save_path,
-            save_compositions=save_compositions,
             verbose=verbose
         )
         
@@ -691,7 +688,7 @@ def HIDE(C_train_all, C_val_all,
                     X_ref_all, 
                     subtypes_dict, count_celltypes,
                     iterations_dtd=500,
-                    savePath=None, saveC=False, saveC_prefix=''): 
+                    savePath=None): 
 
     # Ensure everything is in correct order and normalization is done
     
@@ -775,9 +772,6 @@ def HIDE(C_train_all, C_val_all,
     
     X_main = results_maintype['X_main']
 
-    if saveC:
-        results_maintype['C_main_val_est'].to_csv(savePath+f'_C_main_' + saveC_prefix + f'.csv')
-
     # Loop through the subtypes, adjust the reference matrices and compositions each time 
     # and store the results into a dictionary
     results_subtypes = {}
@@ -805,9 +799,6 @@ def HIDE(C_train_all, C_val_all,
             corr_val_dtd_sub.extend(result_sub['val_corr']) #[].mean()
             corr_train_dtd_sub.extend(result_sub['train_corr']) #[].mean()
 
-            if saveC:
-                result_sub['C_val_est'].to_csv(savePath+f'_C_{celltype}_' + saveC_prefix + f'.csv')
-
             # Now loop through the subset types
             for j, subtype in enumerate(subtypes_dict[celltype].keys()):
                 
@@ -831,9 +822,6 @@ def HIDE(C_train_all, C_val_all,
                     # Add results to corr variables
                     corr_val_dtd_subset.extend(result_subset['val_corr'])
                     corr_train_dtd_subset.extend(result_subset['train_corr'])
-
-                    if saveC:
-                        result_subset['C_val_est'].to_csv(savePath+f'_C_{subtype}_' + saveC_prefix + f'.csv')
 
                     used_subsettypes.extend(subtypes_dict[celltype][subtype])
                 else:
