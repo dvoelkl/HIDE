@@ -17,13 +17,8 @@ path_to_data_folder = f"./data/"
 
 
 ### MAIN ###
-def run(path_to_data_folder, iterations_HIDE, savePathCorrelation):
+def run(path_to_data_folder, iterations_HIDE):
     print("########## HIDE ##########")
-    
-    # Check if savePathCorrelation directory exists, create if not
-    if not os.path.exists(savePathCorrelation):
-        os.makedirs(savePathCorrelation)
-        print(f"--> Created directory: {savePathCorrelation}")
 
     # Load data files
     X_train = pd.read_csv(path_to_data_folder + "/X_train.csv", index_col=0)
@@ -41,8 +36,6 @@ def run(path_to_data_folder, iterations_HIDE, savePathCorrelation):
         hierarchy_file_path=path_to_data_folder + 'cell_hierarchy.csv',
         X_ref=X_train,
         iterations_dtd=iterations_HIDE,
-        save_path=savePathCorrelation,
-        save_compositions=True,
         verbose=True
     )
     
@@ -67,7 +60,7 @@ def run(path_to_data_folder, iterations_HIDE, savePathCorrelation):
 
 if __name__ == '__main__':
     # Train the model
-    trained_model = run(path_to_data_folder, iterations_HIDE, savePathCorrelation='./results/')
+    trained_model = run(path_to_data_folder, iterations_HIDE)
     
     # Optional: Example of making predictions on new data
     # In this case, we'll predict on the validation set as an example

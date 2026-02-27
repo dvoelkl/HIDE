@@ -1,26 +1,24 @@
 
 ##########################################################
 #
-# HIDE Class - Simplified interface for HIDE algorithm
+# HIDE Class
 #
 ##########################################################
 
 import matplotlib.pyplot as plt
-from scipy.stats import spearmanr, linregress
-from scipy.io import mmread
+from scipy.stats import linregress
 import numpy as np
 import pandas as pd
 from deconomix.methods import DTD
 from HIDE_utils import flatten_nested_dict, process_composition, estimate_corr, estimate_nmae
 from deconomix.utils import calculate_estimated_composition
 from HIDE_dataloader import disco_read_metadata
-from HIDE_utils import merge_celltypes, filter_subtypes_by_dataframe_columns
-import datetime
+from HIDE_utils import merge_celltypes
 import pickle
 
 class HIDEModel:
     """
-    Simplified HIDE class for hierarchical cell-type deconvolution.
+    HIDE class for hierarchical cell-type deconvolution.
     
     This class provides a scikit-learn-like interface for the HIDE algorithm
     with separate train() and predict() methods.
@@ -33,26 +31,16 @@ class HIDEModel:
         Dictionary containing counts of each cell type in training data
     iterations_dtd : int, default=500
         Number of iterations for DTD training
-    save_path : str, optional
-        Path to save intermediate results and plots
-    save_models : bool, default=False
-        Whether to save model parameters (gamma, X, LinReg)
-    save_compositions : bool, default=False
-        Whether to save estimated compositions
     verbose : bool, default=True
         Whether to print progress information
     """
     
-    def __init__(self, subtypes_dict, count_celltypes, iterations_dtd=500, 
-                 save_path=None, save_models=False, save_compositions=False, verbose=True):
+    def __init__(self, subtypes_dict, count_celltypes, iterations_dtd=500, verbose=True):
         
         # Set attributes first
         self.subtypes_dict = subtypes_dict
         self.count_celltypes = count_celltypes
         self.iterations_dtd = iterations_dtd
-        self.save_path = save_path
-        self.save_models = save_models
-        self.save_compositions = save_compositions
         self.verbose = verbose
         
         self.is_trained = False
@@ -77,7 +65,7 @@ class HIDEModel:
                     raise ValueError(f"Sub-subtypes for '{main_type}' -> '{subtype}' must be a list or set, got {type(subsubtypes)}")
         
         if self.verbose:
-            print(f"✓ Subtypes dictionary validated successfully")
+            print(f"Subtypes dictionary validated")
             print(f"  - {len(subtypes_dict)} main cell types")
             total_subtypes = sum(len(subtypes) for subtypes in subtypes_dict.values())
             print(f"  - {total_subtypes} total subtypes")
@@ -110,7 +98,7 @@ class HIDEModel:
             print("      Training HIDE Model")
             print("="*50)
         
-        # Train using the original HIDE function
+        # Train using the HIDE function
         self.training_results = HIDE(
             C_train_all=C_train,
             C_val_all=C_val,
@@ -119,10 +107,7 @@ class HIDEModel:
             X_ref_all=X_ref,
             subtypes_dict=self.subtypes_dict,
             count_celltypes=self.count_celltypes,
-            iterations_dtd=self.iterations_dtd,
-            savePath=self.save_path,
-            saveC=self.save_compositions,
-            saveGammaAndX=self.save_models
+            iterations_dtd=self.iterations_dtd
         )
         
         # Extract model parameters for later prediction
@@ -346,10 +331,10 @@ class HIDEModel:
         return summary
     
     def get_metrics(self):
+        '''Function for benchmarking'''
+
         if not self.is_trained:
             raise ValueError("Model must be trained first.")
-
-        import pandas as pd
 
         # Major
         major_types = list(self.model_parameters['major']['X_ref'].columns)
@@ -448,8 +433,7 @@ class HIDEModel:
             print(f"Model saved to {filepath}")
     
     @classmethod
-    def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, 
-                           save_path=None, save_models=False, save_compositions=False, verbose=True):
+    def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, verbose=True):
         """
         Create a HIDEModel from a cell hierarchy CSV file.
         
@@ -465,12 +449,6 @@ class HIDEModel:
             Reference expression matrix (genes x cell types)
         iterations_dtd : int, default=500
             Number of iterations for DTD training
-        save_path : str, optional
-            Path to save intermediate results and plots
-        save_models : bool, default=False
-            Whether to save model parameters (gamma, X, LinReg)
-        save_compositions : bool, default=False
-            Whether to save estimated compositions
         verbose : bool, default=True
             Whether to print progress information
             
@@ -572,9 +550,6 @@ class HIDEModel:
             subtypes_dict=merged_celltypes,
             count_celltypes=count_celltypes,
             iterations_dtd=iterations_dtd,
-            save_path=save_path,
-            save_models=save_models,
-            save_compositions=save_compositions,
             verbose=verbose
         )
         
@@ -698,18 +673,7 @@ def HIDE(C_train_all, C_val_all,
                     Y_train_all, Y_val_all, 
                     X_ref_all, 
                     subtypes_dict, count_celltypes,
-                    iterations_dtd=500,
-                    savePath=None, saveC=False, saveC_prefix='', saveGammaAndX=False): 
-
-    print("##################################")
-    print("###       HIDE pipeline       ###")
-    print("##################################")
-    print(f"-> Number of used genes: {len(X_ref_all.index.unique())}")
-    print(f"-> list of all celltypes:")
-    for i, celltype in enumerate(X_ref_all.columns.unique()): 
-        print(f"\t {i}: {celltype}")
-    start_time = datetime.datetime.now()
-    print(f"-> Started Pipeline at {start_time.time()}")
+                    iterations_dtd=500): 
 
     # Ensure everything is in correct order and normalization is done
     
@@ -785,16 +749,13 @@ def HIDE(C_train_all, C_val_all,
                                             X_ref_subtypes, 
                                             subtypes_only_dict, 
                                             subtype_counts,
-                                            iterations_dtd, savePath, saveGammaAndX=saveGammaAndX)
+                                            iterations_dtd)
     
     # Add results to corr variables
     corr_val_dtd_main = results_maintype['val_main_corr'].mean()
     corr_train_dtd_main = results_maintype['train_main_corr'].mean()
     
     X_main = results_maintype['X_main']
-
-    if saveC:
-        results_maintype['C_main_val_est'].to_csv(savePath+f'_C_main_' + saveC_prefix + f'.csv')
 
     # Loop through the subtypes, adjust the reference matrices and compositions each time 
     # and store the results into a dictionary
@@ -816,16 +777,12 @@ def HIDE(C_train_all, C_val_all,
                                             results_maintype['C_main_val_est'],
                                             results_maintype['C_main_train'],
                                             results_maintype['model_main'],
-                                            iterations_dtd, savePath, saveGammaAndX=saveGammaAndX)
+                                            iterations_dtd)
             results_subtypes.update({celltype:result_sub})
-            print("") # Just for readabilty
 
             # Add results to corr variables
             corr_val_dtd_sub.extend(result_sub['val_corr']) #[].mean()
             corr_train_dtd_sub.extend(result_sub['train_corr']) #[].mean()
-
-            if saveC:
-                result_sub['C_val_est'].to_csv(savePath+f'_C_{celltype}_' + saveC_prefix + f'.csv')
 
             # Now loop through the subset types
             for j, subtype in enumerate(subtypes_dict[celltype].keys()):
@@ -844,56 +801,37 @@ def HIDE(C_train_all, C_val_all,
                                                 result_sub['C_val_est'],
                                                 result_sub['C_train'],
                                                 result_sub['model'],
-                                                iterations_dtd, savePath,
-                                                saveGammaAndX=saveGammaAndX)
+                                                iterations_dtd)
                     results_subsettype.update({subtype:result_subset})
-                    print("") # Just for readabilty
 
                     # Add results to corr variables
                     corr_val_dtd_subset.extend(result_subset['val_corr'])
                     corr_train_dtd_subset.extend(result_subset['train_corr'])
 
-                    if saveC:
-                        result_subset['C_val_est'].to_csv(savePath+f'_C_{subtype}_' + saveC_prefix + f'.csv')
-
                     used_subsettypes.extend(subtypes_dict[celltype][subtype])
                 else:
-                    print(f"-> No subset types of {subtype}\n")
+                    pass
         else:
-            print(f"-> No minor types of {celltype}\n")
+            pass
 
-            
-        
-    end_time = datetime.datetime.now()
-    print(f"-> Ended Pipeline at {end_time.time()}")
-    print(f"-> Total duration: {end_time - start_time}")
-
-    print(f"### Correlations ###")
-    print(f"--- HIDE Training ---")
-    print(f"-> Main correlation: {corr_train_dtd_main}")
     corr_train_dtd_tot = corr_train_dtd_sub
     corr_train_dtd_sub = np.array(corr_train_dtd_sub).mean()
-    print(f"-> Sub correlation: {corr_train_dtd_sub}")
+
     corr_train_dtd_tot.extend([corr_train_dtd_main])
     corr_train_dtd_tot.extend(corr_train_dtd_subset)
     corr_train_dtd_subset = np.mean(np.array(corr_train_dtd_subset))
-    print(f"-> Subset correlation: {corr_train_dtd_subset}")
-    corr_train_dtd_tot = np.mean(np.array(corr_train_dtd_tot))
-    print(f"-> Total correlation: {corr_train_dtd_tot}\n")
 
-    print(f"--- HIDE Validation ---")
-    print(f"-> Main correlation: {corr_val_dtd_main}")
+    corr_train_dtd_tot = np.mean(np.array(corr_train_dtd_tot))
+
     corr_val_dtd_tot = corr_val_dtd_sub.copy()
     corr_val_dtd_sub = np.mean(np.array(corr_val_dtd_sub))
-    print(f"-> Sub correlation: {corr_val_dtd_sub}")
+
     corr_val_dtd_tot.extend([corr_val_dtd_main])
     corr_val_dtd_tot.extend(corr_val_dtd_subset)
     corr_val_dtd_subset = np.mean(np.array(corr_val_dtd_subset))
-    print(f"-> Subset correlation: {corr_val_dtd_subset}")
-    corr_val_dtd_tot = np.mean(np.array(corr_val_dtd_tot))
-    print(f"-> Total correlation: {corr_val_dtd_tot}\n")
-    print("##################################")
     
+    corr_val_dtd_tot = np.mean(np.array(corr_val_dtd_tot))
+
     return {
     'major' : results_maintype,
     'minor' : results_subtypes,
@@ -912,20 +850,9 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
                         Y_train_all, Y_val_all, 
                         X_ref_all, 
                         subtypes_dict, counts_celltypes,
-                        iterations_dtd=500, savePath=None, saveGammaAndX=False):
+                        iterations_dtd=500):
 
-    print("### HIDE on maintypes ###")
-
-    savePathTrain = None if savePath is None else savePath + f'/corr_train_dtd_main'
-    savePathVal = None if savePath is None else savePath + f'/corr_train_dtd_val'
-
-    print(f"-> list of all maintypes:")
-    for i, celltype in enumerate(subtypes_dict.keys()): 
-        print(f"\t {i}: {celltype}")
-
-    print(f"-> Creating cell maintype reference matrix")
     X_ref = pd.DataFrame()
-
     
     for celltype in subtypes_dict.keys():
         tot_cells_of_type = 0
@@ -936,7 +863,7 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
         X_ref[celltype] = weight_sum_of_type / tot_cells_of_type
     
-    print(f"-> Processing compositions")
+
     C_train = process_composition(C_train_all, subtypes_dict, '')
     C_val = process_composition(C_val_all, subtypes_dict, '')
 
@@ -950,8 +877,8 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
     Y_train_all = Y_train_all / Y_train_all.sum(axis=0)
     Y_val_all = Y_val_all / Y_val_all.sum(axis=0)
 
-    print(f"-> Training HIDE")
     model_dtd = DTD(X_ref, Y_train_all, C_train)
+
     model_dtd.run(iterations=iterations_dtd)
 
     
@@ -964,20 +891,13 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
     train_corr = estimate_corr(C_train, 
                             C_train_est,
-                            title='HIDE Maintypes Training', 
-                            savePath=savePathTrain)
+                            title='HIDE Maintypes Training')
     train_nmae = estimate_nmae(C_train, C_train_est)
     
-    print(f"-> Average train correlation: {train_corr.mean()}")
-
-    print(f"-> Validating HIDE")
 
     C_val_est = calculate_estimated_composition(X_ref, Y_val_all, model_dtd.gamma)
 
     linReg_results = HIDEModel.linReg(C_train, C_train_est)
-    if savePathVal is not None:
-        pass
-        #linReg_results.to_csv(savePathVal+f'_LinReg_main.csv')
 
     C_val_est = HIDEModel.adjustToLinReg(C_val_est, linReg_results)
 
@@ -988,16 +908,8 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
     val_corr = estimate_corr(C_val, 
                             C_val_est,
-                            title='HIDE Maintypes Validation', 
-                            savePath=savePathVal)
+                            title='HIDE Maintypes Validation')
     val_nmae = estimate_nmae(C_val, C_val_est)
-    
-    print(f"-> Average val correlation: {val_corr.mean()}")
-
-    if saveGammaAndX:
-            model_dtd.gamma.to_csv(savePathVal+f'_gamma_main.csv')
-            X_ref.to_csv(savePathVal+f'_X_main.csv')
-            linReg_results.to_csv(savePathVal+f'_LinReg_main.csv')
 
     return {
         'train_main_corr' : train_corr,
@@ -1022,17 +934,7 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
                         X_ref_all, X_main,
                         subtypes_dict, type_to_extend,
                         C_est_train_main, C_est_val_main, C_train_main, model_main,
-                        iterations_dtd=500,
-                        savePath=None,
-                        saveGammaAndX=False):
-    
-    print(f"### HIDE on {type_to_extend} subtypes ###")
-    print(f"-> list of {type_to_extend} subtypes:")
-    for i, celltype in enumerate(subtypes_dict[type_to_extend]): 
-        print(f"\t {i}: {celltype}")
-
-    savePathTrain = None if savePath is None else savePath + f'/corr_train_dtd_{type_to_extend}'
-    savePathVal = None if savePath is None else savePath + f'/corr_val_dtd_{type_to_extend}'
+                        iterations_dtd=500):
 
     # Only keep entries of the selected cell maintype
     X_ref = X_ref_all[subtypes_dict[type_to_extend]]
@@ -1050,7 +952,7 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
     #
 
     # Remove Bulks over other maintypes in Training
-    print("-> Clearing training bulks")
+
     Y_train_to_remove = X_main[X_main.columns.difference([type_to_extend])] @ C_est_train_main.loc[C_est_train_main.index.difference([type_to_extend])]
     Y_train_to_remove.columns = Y_train_all.columns
     Y_train_reduced = (Y_train_all - Y_train_to_remove).clip(lower=0)
@@ -1058,7 +960,6 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
     X_ref = X_ref / X_ref.sum(axis=0)
     Y_train_reduced = C_train_main.loc[type_to_extend].to_numpy() * Y_train_reduced / Y_train_reduced.sum(axis=0)
 
-    print(f"-> Training HIDE")
     model_dtd = DTD(X_ref, Y_train_reduced, C_train)
     model_dtd.run(iterations=iterations_dtd)
 
@@ -1073,22 +974,15 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
 
     train_corr = estimate_corr(C_train, 
                             estimation_train['C_est'],
-                            title=f'HIDE {type_to_extend} Training', 
-                            savePath=savePathTrain)
+                            title=f'HIDE {type_to_extend} Training')
     train_nmae = estimate_nmae(C_train, estimation_train['C_est'])
     
     linReg_results = HIDEModel.linReg(C_train, estimation_train['C_est'])
-    if savePathVal is not None:
-        pass
-        #linReg_results.to_csv(savePathVal+f'_LinReg_{type_to_extend}.csv')
 
-    print(f"-> Average train correlation: {train_corr.mean()}")
 
     #
     # Validation
     #
-
-    print(f"-> Validating HIDE")
     
 
     estimation_val = subtypes_estimate_composition(X_ref, 
@@ -1101,16 +995,8 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
 
     val_corr = estimate_corr(C_val, 
                             estimation_val['C_est'],
-                            title=f'HIDE {type_to_extend} Validation', 
-                            savePath=savePathVal)
+                            title=f'HIDE {type_to_extend} Validation')
     val_nmae = estimate_nmae(C_val, estimation_val['C_est'])
-    
-    print(f"-> Average val correlation: {val_corr.mean()}")
-
-    if saveGammaAndX:
-        model_dtd.gamma.to_csv(savePathVal+f'_gamma_{type_to_extend}.csv')
-        X_ref.to_csv(savePathVal+f'_X_{type_to_extend}.csv')
-        linReg_results.to_csv(savePathVal+f'_LinReg_{type_to_extend}.csv')
 
     return {
         'train_corr' : train_corr,
@@ -1139,7 +1025,7 @@ def subtypes_estimate_composition(X_sub, X_main,
     #
     # Remove contributions of other celltypes
     #
-    print("-> clearing bulks")
+
     Y_to_remove = X_main[X_main.columns.difference([type_to_extend])] @ C_main.loc[C_main.index.difference([type_to_extend])]
     Y_to_remove.columns = Y_all.columns
 
