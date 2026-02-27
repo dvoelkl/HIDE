@@ -31,23 +31,16 @@ class HIDEModel:
         Dictionary containing counts of each cell type in training data
     iterations_dtd : int, default=500
         Number of iterations for DTD training
-    save_path : str, optional
-        Path to save intermediate results and plots
-        Whether to save model parameters (gamma, X, LinReg)
-    save_compositions : bool, default=False
-        Whether to save estimated compositions
     verbose : bool, default=True
         Whether to print progress information
     """
     
-    def __init__(self, subtypes_dict, count_celltypes, iterations_dtd=500, 
-                 save_path=None, verbose=True):
+    def __init__(self, subtypes_dict, count_celltypes, iterations_dtd=500, verbose=True):
         
         # Set attributes first
         self.subtypes_dict = subtypes_dict
         self.count_celltypes = count_celltypes
         self.iterations_dtd = iterations_dtd
-        self.save_path = save_path
         self.verbose = verbose
         
         self.is_trained = False
@@ -114,8 +107,7 @@ class HIDEModel:
             X_ref_all=X_ref,
             subtypes_dict=self.subtypes_dict,
             count_celltypes=self.count_celltypes,
-            iterations_dtd=self.iterations_dtd,
-            savePath=self.save_path
+            iterations_dtd=self.iterations_dtd
         )
         
         # Extract model parameters for later prediction
@@ -441,8 +433,7 @@ class HIDEModel:
             print(f"Model saved to {filepath}")
     
     @classmethod
-    def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, 
-                           save_path=None, verbose=True):
+    def from_hierarchy_file(cls, hierarchy_file_path, X_ref, iterations_dtd=500, verbose=True):
         """
         Create a HIDEModel from a cell hierarchy CSV file.
         
@@ -458,10 +449,6 @@ class HIDEModel:
             Reference expression matrix (genes x cell types)
         iterations_dtd : int, default=500
             Number of iterations for DTD training
-        save_path : str, optional
-            Path to save intermediate results and plots
-        save_compositions : bool, default=False
-            Whether to save estimated compositions
         verbose : bool, default=True
             Whether to print progress information
             
@@ -563,7 +550,6 @@ class HIDEModel:
             subtypes_dict=merged_celltypes,
             count_celltypes=count_celltypes,
             iterations_dtd=iterations_dtd,
-            save_path=save_path,
             verbose=verbose
         )
         
@@ -687,8 +673,7 @@ def HIDE(C_train_all, C_val_all,
                     Y_train_all, Y_val_all, 
                     X_ref_all, 
                     subtypes_dict, count_celltypes,
-                    iterations_dtd=500,
-                    savePath=None): 
+                    iterations_dtd=500): 
 
     # Ensure everything is in correct order and normalization is done
     
@@ -764,7 +749,7 @@ def HIDE(C_train_all, C_val_all,
                                             X_ref_subtypes, 
                                             subtypes_only_dict, 
                                             subtype_counts,
-                                            iterations_dtd, savePath)
+                                            iterations_dtd)
     
     # Add results to corr variables
     corr_val_dtd_main = results_maintype['val_main_corr'].mean()
@@ -792,7 +777,7 @@ def HIDE(C_train_all, C_val_all,
                                             results_maintype['C_main_val_est'],
                                             results_maintype['C_main_train'],
                                             results_maintype['model_main'],
-                                            iterations_dtd, savePath)
+                                            iterations_dtd)
             results_subtypes.update({celltype:result_sub})
 
             # Add results to corr variables
@@ -816,7 +801,7 @@ def HIDE(C_train_all, C_val_all,
                                                 result_sub['C_val_est'],
                                                 result_sub['C_train'],
                                                 result_sub['model'],
-                                                iterations_dtd, savePath)
+                                                iterations_dtd)
                     results_subsettype.update({subtype:result_subset})
 
                     # Add results to corr variables
@@ -865,15 +850,9 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
                         Y_train_all, Y_val_all, 
                         X_ref_all, 
                         subtypes_dict, counts_celltypes,
-                        iterations_dtd=500, savePath=None):
-
-
-    savePathTrain = None if savePath is None else savePath + f'/corr_train_dtd_main'
-    savePathVal = None if savePath is None else savePath + f'/corr_train_dtd_val'
-
+                        iterations_dtd=500):
 
     X_ref = pd.DataFrame()
-
     
     for celltype in subtypes_dict.keys():
         tot_cells_of_type = 0
@@ -912,17 +891,13 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
     train_corr = estimate_corr(C_train, 
                             C_train_est,
-                            title='HIDE Maintypes Training', 
-                            savePath=savePathTrain)
+                            title='HIDE Maintypes Training')
     train_nmae = estimate_nmae(C_train, C_train_est)
     
 
     C_val_est = calculate_estimated_composition(X_ref, Y_val_all, model_dtd.gamma)
 
     linReg_results = HIDEModel.linReg(C_train, C_train_est)
-    if savePathVal is not None:
-        pass
-        #linReg_results.to_csv(savePathVal+f'_LinReg_main.csv')
 
     C_val_est = HIDEModel.adjustToLinReg(C_val_est, linReg_results)
 
@@ -933,8 +908,7 @@ def subtypes_pipeline_main(C_train_all, C_val_all,
 
     val_corr = estimate_corr(C_val, 
                             C_val_est,
-                            title='HIDE Maintypes Validation', 
-                            savePath=savePathVal)
+                            title='HIDE Maintypes Validation')
     val_nmae = estimate_nmae(C_val, C_val_est)
 
     return {
@@ -960,11 +934,7 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
                         X_ref_all, X_main,
                         subtypes_dict, type_to_extend,
                         C_est_train_main, C_est_val_main, C_train_main, model_main,
-                        iterations_dtd=500,
-                        savePath=None):
-
-    savePathTrain = None if savePath is None else savePath + f'/corr_train_dtd_{type_to_extend}'
-    savePathVal = None if savePath is None else savePath + f'/corr_val_dtd_{type_to_extend}'
+                        iterations_dtd=500):
 
     # Only keep entries of the selected cell maintype
     X_ref = X_ref_all[subtypes_dict[type_to_extend]]
@@ -1004,14 +974,10 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
 
     train_corr = estimate_corr(C_train, 
                             estimation_train['C_est'],
-                            title=f'HIDE {type_to_extend} Training', 
-                            savePath=savePathTrain)
+                            title=f'HIDE {type_to_extend} Training')
     train_nmae = estimate_nmae(C_train, estimation_train['C_est'])
     
     linReg_results = HIDEModel.linReg(C_train, estimation_train['C_est'])
-    if savePathVal is not None:
-        pass
-        #linReg_results.to_csv(savePathVal+f'_LinReg_{type_to_extend}.csv')
 
 
     #
@@ -1029,8 +995,7 @@ def subtypes_pipeline_sub(C_train_all, C_val_all,
 
     val_corr = estimate_corr(C_val, 
                             estimation_val['C_est'],
-                            title=f'HIDE {type_to_extend} Validation', 
-                            savePath=savePathVal)
+                            title=f'HIDE {type_to_extend} Validation')
     val_nmae = estimate_nmae(C_val, estimation_val['C_est'])
 
     return {
