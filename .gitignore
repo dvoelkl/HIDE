@@ -1,2 +1,4 @@
 test.py
 HIDE article.pdf
+/__pycache__
+/results
